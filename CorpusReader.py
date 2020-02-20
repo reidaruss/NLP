@@ -46,20 +46,44 @@ class CorpusReader_TFIDF:
     def tf_calc(self, tfType):
         return_dict = {}
         total_unique = []
+        freqs = []
+        return_df = pd.DataFrame(index=self.docs)
         if tfType == 'raw':
             for doc in range(self.df[1].size):
-                list_set = set(self.df.iloc[doc][1])    # Changing to a set then back to a list gets only unique words
-                unique_list = (list(list_set))
-                total_unique = list(set(unique_list) - set(total_unique))   # Create a list of unique words for all docs
-                return_dict[self.df.iloc[doc][0]] = self.df.iloc[doc][1]
-        #print(sorted(total_unique))
-        return_df = pd.DataFrame(0, index = self.docs, columns = sorted(total_unique) )
-        for doc in self.docs:
-            for word in total_unique:
-                return_df.loc[doc, word] = return_dict[doc].count(word)
+
+                a = np.array(self.df.iloc[doc][1])
+                unique, counts = np.unique(a, return_counts = True)
+                tempdict = dict(zip(unique,counts))
+                #table = pd.DataFrame(tempdict)
+                return_df[doc].append(tempdict)
+                #return_df.loc[self.docs[doc]] = tempdict
+                #total_unique = list(set(unique) - set(total_unique))   # Create a list of unique words for all docs
+                freqs.append(tempdict)
+                #print(table)
+
+        total_unique = sorted(total_unique)
+       # return_df = pd.DataFrame(0,columns=total_unique)
+        print(return_df)
+
+        # for dictindex in range(len(freqs)):
+        #     for word in freqs[dictindex]:
+        #         return_df.loc[self.docs[dictindex], word] = freqs[dictindex][word]
+        #     print(dictindex)
+        #print(return_dict)
+        #for doc in self.docs:
+        # i = 0
+        # for word in total_unique:
+        #     for doc in self.docs:
+        #         return_df.loc[doc, word] = return_dict[doc].count(word)
+        #         i = i +1
+        #         if i % 500 == 0:
+        #             print(return_df)
+                #print(return_dict[doc].count(word))
+
+
         # for doc in self.df[0]:
         #     for word in return_dict[doc]:
-
+        print(return_df)
 
         return return_dict
 
