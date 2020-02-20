@@ -30,8 +30,7 @@ class CorpusReader_TFIDF:
             print("Invalid stopword parameter.")
             return
 
-
-        # Use tf #######
+        # Calculate tf #######
         if tf.lower() == "raw" or tf.lower() == "log" or tf.lower() == "binary": #  Use log normalized term frequency
             self.tf = tf.lower()
             self.ptf = self.tf_calc(self.tf) # gets dataframe of docs, unique words and their frequency
@@ -39,22 +38,18 @@ class CorpusReader_TFIDF:
             print("Invalid tf parameter.")
             return
 
-
-
-        # # Use idf #######
-        # if idf.lower() == "base" or idf.lower() == "smooth": # Use inverse frequency
-        #     self.idf = idf.lower()
-        # else:
-        #     print("Invalid idf parameter")
-        #     return
-        #
+        # Calculate idf #######
+        if idf.lower() == "base" or idf.lower() == "smooth":
+            self.idf = idf.lower()
+        else:
+            print("Invalid idf parameter")
+            return
 
         return
 
     def tf_calc(self, tfType):
-        return_dict = {}
-        total_unique = np.array([])
-        freqs = []
+        total_unique = np.array([]) # A np array that tracks all unique words
+        freqs = []  # Tracks the dictionaries associated with each document
 
         if tfType == 'raw':
             for doc in range(self.df[1].size):
@@ -64,7 +59,6 @@ class CorpusReader_TFIDF:
 
                 for i in range(len(a)):             # Use stemmer before getting unique values
                     a[i] = self.stemmer.stem(a[i])
-
 
                 if self.stopwords != "NULL":     # Remove stopwords
                     a = [w for w in a if not w in self.stopwords]
@@ -78,8 +72,7 @@ class CorpusReader_TFIDF:
         return_df = pd.DataFrame(0,index=self.docs, columns=sorted(total_unique))   # Create dataframe with all unique
                                                                                     # words as columns and each doc
                                                                                     # as row index.
-
-
+        return_dict = {}
         for doc in range(len(self.docs)):
             return_dict[self.docs[doc]] = freqs[doc]  # Asociate each document with its dictionary of unique words and freqs
 
@@ -87,14 +80,14 @@ class CorpusReader_TFIDF:
             tdict = dict(tdict)
             for word, freq in tdict.items():
                 return_df.loc[doc, word] = freq
-        print(return_df.describe())
 
         return return_dict
 
+    def getTF(self):
+        return self.ptf
 
-    def stem(self):
-        if self.stemmer == "porter":
-            self.stemmer = PorterStemmer()
+    def getIDF(self):
+        return
 
     #  return a list of ALL tf-idf vector (each vector should be a list) for the corpus,
     # ordered by the order where filelds are returned (the dimensions of the vector should be

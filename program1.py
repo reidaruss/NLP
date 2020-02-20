@@ -5,14 +5,11 @@ import pandas as pd
 brown = nltk.corpus.brown
 sotu = nltk.corpus.state_union
 
-# corpus_list = [brown, sotu]
-#
-# print("Number of words in brown corpus: " + str(len(brown.words())))
-# print("Number of words in sotu corpus: " + str(len(sotu.words())))
-#
-# for corpus in corpus_list:
-#     CR = CorpusReader.CorpusReader_TFIDF(corpus, )
+CR1 = CorpusReader.CorpusReader_TFIDF(brown)
+CR2 = CorpusReader.CorpusReader_TFIDF(sotu)
 
-CR = CorpusReader.CorpusReader_TFIDF(brown)
+df1 = CR1.getTF()
+df2 = CR2.getTF()
 
-
+print(df1.describe())
+print(df2.describe())
