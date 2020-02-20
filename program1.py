@@ -13,3 +13,6 @@ df2 = CR2.getTF()
 
 print(df1.describe())
 print(df2.describe())
+
+
+#print(df1.loc[])

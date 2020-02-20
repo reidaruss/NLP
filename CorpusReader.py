@@ -48,32 +48,37 @@ class CorpusReader_TFIDF:
         return
 
     def tf_calc(self, tfType):
+        scale_factor = 0.05 # Look at a smaller dataset
+
         total_unique = np.array([]) # A np array that tracks all unique words
         freqs = []  # Tracks the dictionaries associated with each document
+        for doc in range(round(self.df[1].size*scale_factor)):
+            a = np.array(self.df.iloc[doc][1])  # Get each set of words associated with a document
+            if self.ignorecase == "ignore":     # Ignore case or do not ignore case
+                a = np.char.lower(a)
+            a = [word for word in a if word.isalpha()]
+            for i in range(len(a)):             # Use stemmer before getting unique values
+                a[i] = self.stemmer.stem(a[i])
 
-        if tfType == 'raw':
-            for doc in range(self.df[1].size):
-                a = np.array(self.df.iloc[doc][1])  # Get each set of words associated with a document
-                if self.ignorecase == "ignore":     # Ignore case or do not ignore case
-                    a = np.char.lower(a)
+            if self.stopwords != "NULL":     # Remove stopwords
+                a = [w for w in a if not w in self.stopwords]
 
-                for i in range(len(a)):             # Use stemmer before getting unique values
-                    a[i] = self.stemmer.stem(a[i])
+            unique, counts = np.unique(a, return_counts = True)     # Get the unique values and their counts
+            if tfType == 'log':
+                counts = 1 + (np.log(counts) / np.log(2))
+            if tfType == 'binary':
+                counts = np.ones(len(counts))
+            tempdict = dict(zip(unique,counts))   # Put unique vals and counts into dictionary
 
-                if self.stopwords != "NULL":     # Remove stopwords
-                    a = [w for w in a if not w in self.stopwords]
+            total_unique = np.unique(np.concatenate([total_unique,unique]))   # Create a list of unique words for all docs
+            freqs.append(tempdict)
+            if doc % 5 == 0 and doc != 0:
+                print((doc/round(self.df[1].size*scale_factor))*100)
 
-                unique, counts = np.unique(a, return_counts = True)     # Get the unique values and their counts
-                tempdict = dict(zip(unique,counts))   # Put unique vals and counts into dictionary
 
-                total_unique = np.unique(np.concatenate([total_unique,unique]))   # Create a list of unique words for all docs
-                freqs.append(tempdict)
-
-        return_df = pd.DataFrame(0,index=self.docs, columns=sorted(total_unique))   # Create dataframe with all unique
-                                                                                    # words as columns and each doc
-                                                                                    # as row index.
+        return_df = pd.DataFrame(0, index=self.docs[:round(self.df[1].size*scale_factor)], columns=sorted(total_unique))  # Create dataframe with all unique
         return_dict = {}
-        for doc in range(len(self.docs)):
+        for doc in range(round(self.df[1].size*scale_factor)):
             return_dict[self.docs[doc]] = freqs[doc]  # Asociate each document with its dictionary of unique words and freqs
 
         for doc, tdict in return_dict.items():  # Fill dataframe with each frequency by doc and word in dictionary
@@ -81,7 +86,7 @@ class CorpusReader_TFIDF:
             for word, freq in tdict.items():
                 return_df.loc[doc, word] = freq
 
-        return return_dict
+        return return_df
 
     def getTF(self):
         return self.ptf
