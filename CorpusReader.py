@@ -2,25 +2,45 @@ import numpy as np
 import pandas as pd
 import nltk
 from nltk.stem import PorterStemmer
+from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
 class CorpusReader_TFIDF:
-    def __init__(self, corpus, tf = "raw", idf = "base", stopword = "yes", stemmer = "porter", ignorecase = "ignore"):
-        self.docs = corpus.fileids()
+    def __init__(self, corpus, tf = "raw", idf = "base", stopword = "english", stemmer = "porter", ignorecase = "ignore"):
+        self.docs = corpus.fileids()    # Get list of docs
         self.corpus = corpus
-        docs = self.corpus.fileids()
-        self.df = pd.DataFrame([doc, self.corpus.words(fileids=[doc])] for doc in docs)
+
+        # This line creates a dataframe of document names and the words in that document for all documents
+        self.df = pd.DataFrame([doc, self.corpus.words(fileids=[doc])] for doc in self.docs)
+
+        # Set ingnorecase ####
+        if ignorecase.lower() == "ignore" or ignorecase.lower() == "no":
+            self.ignorecase = ignorecase.lower()
+
+        # Set Stemmer ######
+        if stemmer.lower() == "porter":
+            self.stemmer = PorterStemmer()
+
+        # Set stopword #######
+        if stopword.lower() == "english":
+            self.stopwords = set(stopwords.words('english'))
+        elif stopword.lower() == "none":
+            self.stopwords = 'NULL'
+        else:
+            print("Invalid stopword parameter.")
+            return
+
 
         # Use tf #######
         if tf.lower() == "raw" or tf.lower() == "log" or tf.lower() == "binary": #  Use log normalized term frequency
             self.tf = tf.lower()
-            self.ptf = self.tf_calc(self.tf) # gets dictionary of doc, unique words and their frequency
+            self.ptf = self.tf_calc(self.tf) # gets dataframe of docs, unique words and their frequency
         else:
             print("Invalid tf parameter.")
             return
-        # for x in self.ptf:
-        #     print(x)
-        #
+
+
+
         # # Use idf #######
         # if idf.lower() == "base" or idf.lower() == "smooth": # Use inverse frequency
         #     self.idf = idf.lower()
@@ -28,62 +48,46 @@ class CorpusReader_TFIDF:
         #     print("Invalid idf parameter")
         #     return
         #
-        # # Use stopword #######
-        # if stopword.lower() == "yes" or stopword.lower() == "none":
-        #     self.stopword = stopword.lower()
-        # else:
-        #     print("Invalid stopword parameter.")
-        #     return
-        #
-        # self.stemmer = stemmer.lower()
-        #
-        # if ignorecase.lower() == "ignore" or ignorecase.lower() == "no":
-        #     self.ignorecase = ignorecase.lower()
-        # else:
-        #     print("Invalid ignorecase parameter.")
-        #     return
+
+        return
 
     def tf_calc(self, tfType):
         return_dict = {}
-        total_unique = []
+        total_unique = np.array([])
         freqs = []
-        return_df = pd.DataFrame(index=self.docs)
+
         if tfType == 'raw':
             for doc in range(self.df[1].size):
+                a = np.array(self.df.iloc[doc][1])  # Get each set of words associated with a document
+                if self.ignorecase == "ignore":     # Ignore case or do not ignore case
+                    a = np.char.lower(a)
 
-                a = np.array(self.df.iloc[doc][1])
-                unique, counts = np.unique(a, return_counts = True)
-                tempdict = dict(zip(unique,counts))
-                #table = pd.DataFrame(tempdict)
-                return_df[doc].append(tempdict)
-                #return_df.loc[self.docs[doc]] = tempdict
-                #total_unique = list(set(unique) - set(total_unique))   # Create a list of unique words for all docs
+                for i in range(len(a)):             # Use stemmer before getting unique values
+                    a[i] = self.stemmer.stem(a[i])
+
+
+                if self.stopwords != "NULL":     # Remove stopwords
+                    a = [w for w in a if not w in self.stopwords]
+
+                unique, counts = np.unique(a, return_counts = True)     # Get the unique values and their counts
+                tempdict = dict(zip(unique,counts))   # Put unique vals and counts into dictionary
+
+                total_unique = np.unique(np.concatenate([total_unique,unique]))   # Create a list of unique words for all docs
                 freqs.append(tempdict)
-                #print(table)
 
-        total_unique = sorted(total_unique)
-       # return_df = pd.DataFrame(0,columns=total_unique)
-        print(return_df)
-
-        # for dictindex in range(len(freqs)):
-        #     for word in freqs[dictindex]:
-        #         return_df.loc[self.docs[dictindex], word] = freqs[dictindex][word]
-        #     print(dictindex)
-        #print(return_dict)
-        #for doc in self.docs:
-        # i = 0
-        # for word in total_unique:
-        #     for doc in self.docs:
-        #         return_df.loc[doc, word] = return_dict[doc].count(word)
-        #         i = i +1
-        #         if i % 500 == 0:
-        #             print(return_df)
-                #print(return_dict[doc].count(word))
+        return_df = pd.DataFrame(0,index=self.docs, columns=sorted(total_unique))   # Create dataframe with all unique
+                                                                                    # words as columns and each doc
+                                                                                    # as row index.
 
 
-        # for doc in self.df[0]:
-        #     for word in return_dict[doc]:
-        print(return_df)
+        for doc in range(len(self.docs)):
+            return_dict[self.docs[doc]] = freqs[doc]  # Asociate each document with its dictionary of unique words and freqs
+
+        for doc, tdict in return_dict.items():  # Fill dataframe with each frequency by doc and word in dictionary
+            tdict = dict(tdict)
+            for word, freq in tdict.items():
+                return_df.loc[doc, word] = freq
+        print(return_df.describe())
 
         return return_dict
 
