@@ -1,9 +1,72 @@
 import numpy as np
+import pandas as pd
 import nltk
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
 
 class CorpusReader_TFIDF:
-    def __init__(self, corpus, tf, idf, stopword, stemmer, ignorecase):
-        return
+    def __init__(self, corpus, tf = "raw", idf = "base", stopword = "yes", stemmer = "porter", ignorecase = "ignore"):
+        self.docs = corpus.fileids()
+        self.corpus = corpus
+        docs = self.corpus.fileids()
+        self.df = pd.DataFrame([doc, self.corpus.words(fileids=[doc])] for doc in docs)
+
+        # Use tf #######
+        if tf.lower() == "raw" or tf.lower() == "log" or tf.lower() == "binary": #  Use log normalized term frequency
+            self.tf = tf.lower()
+            self.ptf = self.tf_calc(self.tf) # gets dictionary of doc, unique words and their frequency
+        else:
+            print("Invalid tf parameter.")
+            return
+        # for x in self.ptf:
+        #     print(x)
+        #
+        # # Use idf #######
+        # if idf.lower() == "base" or idf.lower() == "smooth": # Use inverse frequency
+        #     self.idf = idf.lower()
+        # else:
+        #     print("Invalid idf parameter")
+        #     return
+        #
+        # # Use stopword #######
+        # if stopword.lower() == "yes" or stopword.lower() == "none":
+        #     self.stopword = stopword.lower()
+        # else:
+        #     print("Invalid stopword parameter.")
+        #     return
+        #
+        # self.stemmer = stemmer.lower()
+        #
+        # if ignorecase.lower() == "ignore" or ignorecase.lower() == "no":
+        #     self.ignorecase = ignorecase.lower()
+        # else:
+        #     print("Invalid ignorecase parameter.")
+        #     return
+
+    def tf_calc(self, tfType):
+        return_dict = {}
+        total_unique = []
+        if tfType == 'raw':
+            for doc in range(self.df[1].size):
+                list_set = set(self.df.iloc[doc][1])    # Changing to a set then back to a list gets only unique words
+                unique_list = (list(list_set))
+                total_unique = list(set(unique_list) - set(total_unique))   # Create a list of unique words for all docs
+                return_dict[self.df.iloc[doc][0]] = self.df.iloc[doc][1]
+        #print(sorted(total_unique))
+        return_df = pd.DataFrame(0, index = self.docs, columns = sorted(total_unique) )
+        for doc in self.docs:
+            for word in total_unique:
+                return_df.loc[doc, word] = return_dict[doc].count(word)
+        # for doc in self.df[0]:
+        #     for word in return_dict[doc]:
+
+
+        return return_dict
+
+
+    def stem(self):
+        if self.stemmer == "porter":
+            self.stemmer = PorterStemmer()
 
     #  return a list of ALL tf-idf vector (each vector should be a list) for the corpus,
     # ordered by the order where filelds are returned (the dimensions of the vector should be
