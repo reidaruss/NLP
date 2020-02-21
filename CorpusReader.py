@@ -51,12 +51,24 @@ class CorpusReader_TFIDF:
         return self.corpus.fileids()
 
     # Extends corpus class method raw()
-    def raw(self):
-        return self.corpus.raw()
+    def raw(self, fileids = []):
+        if len(fileids) == 0:
+            return self.corpus.raw()
+        else:
+            return self.corpus.raw(fileids)
+
 
     # Extends corpus class method words()
-    def words(self):
-        return self.corpus.words()
+    def words(self, fileids = []):
+        if len(fileids) == 0:
+            return self.corpus.words()
+        else: return self.corpus.words(fileids)
+
+    def open(self, fileid):
+        return self.corpus.open(fileid)
+
+    def abspath(self, fileid):
+        return self.corpus.abspath(fileid)
 
 
     def tfidf_calc(self, tfType):
