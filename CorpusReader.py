@@ -81,7 +81,7 @@ class CorpusReader_TFIDF:
             a = np.array(self.df.iloc[doc][1])  # Get each set of words associated with a document
             if self.ignorecase == "ignore":     # Ignore case or do not ignore case
                 a = np.char.lower(a)
-            a = [word for word in a if word.isalpha()]
+            a = [word for word in a if word.isalpha()]  # Remove punctuation and numbers
             for i in range(len(a)):             # Use stemmer before getting unique values
                 a[i] = self.stemmer.stem(a[i])
 
@@ -107,8 +107,6 @@ class CorpusReader_TFIDF:
             for subdict in freqs:
                 if total_unique[i] in subdict:
                     ni[i] = ni[i] + 1
-
-
 
         for i in range(len(freqs)):
             tfidf = copy.deepcopy(freqs[i])
@@ -151,8 +149,47 @@ class CorpusReader_TFIDF:
     # document (with the same stopword, stemming, ignorecase treatment applied, if
     # necessary). You should use the idf for the original corpus to calculate the result (i.e. do
     # not treat the document as a part of the original corpus)
-    def tf_idf_new(self, words):
-        return
+    def tf_idf_new(self, words = []):
+        N = 1
+        tf_idf = []
+        total_unique = np.array([]) # A np array that tracks all unique words
+        freqs = []  # Tracks the dictionaries associated with each document
+        a = np.array(words)  # Get each set of words associated with a document
+        if self.ignorecase == "ignore":     # Ignore case or do not ignore case
+            a = np.char.lower(a)
+        a = [word for word in a if word.isalpha()]  # Remove punctuation and numbers
+        for i in range(len(a)):             # Use stemmer before getting unique values
+            a[i] = self.stemmer.stem(a[i])
+
+        if self.stopwords != "NULL":     # Remove stopwords
+            a = [w for w in a if not w in self.stopwords]
+
+
+        unique, counts = np.unique(a, return_counts = True)     # Get the unique values and their counts
+        if self.tf == 'log':
+            counts = 1 + (np.log(counts) / np.log(2))
+        if self.tf == 'binary':
+            counts = np.ones(len(counts))
+        tempdict = dict(zip(unique,counts))   # Put unique vals and counts into dictionary
+
+        total_unique = np.concatenate([total_unique,unique])   # Create a list of unique words for all docs
+        freqs.append(tempdict)
+        ni = np.zeros(len(total_unique))
+        for i in range(len(total_unique)):  # Calculate ni to use in idf
+            for subdict in freqs:
+                if total_unique[i] in subdict:
+                    ni[i] = ni[i] + 1
+
+        for i in range(len(freqs)):
+            tfidf = copy.deepcopy(freqs[i])
+            for j in freqs[i].items():
+                if self.idf == 'smooth':    # This is the formula implementation of the final tf_idf step
+                    tfidf[j[0]] =  j[1] * (np.log(1+(N/ni[np.where(total_unique == j[0])]))/np.log(2))
+                else:
+                    tfidf[j[0]] = j[1] * (np.log(N / ni[np.where(total_unique == j[0])]) / np.log(2))
+            tf_idf.append(tfidf)
+        return tf_idf
+
     # return the cosine similarity between two documents
     # in the corpus
     def cosine_sim(self, fileid = []):
@@ -194,7 +231,32 @@ class CorpusReader_TFIDF:
     # cosine similarity between fileid and the new document specify by the [words] list. (Once
     # again, use the idf of the original corpus).
     def cosine_sim_new(self,words,fileid):
-        return
+        file1 = words
+        file2 = fileid
+        file2ind = 0
+        for i in range(len(self.docs)):
+            if self.docs[i] == file2:
+                file2ind = i
+        a1 = file1
+        a2 = []
+        for file in self.ptf[file2ind].items(): # Get the vector of words for each file
+            a2.append(file[0])
+        a1 = set(a1)
+        rvector = a1.union(set(a2)) # Take the union to find intersections
+        x = []
+        z = []
+        for w in rvector:
+            if w in a1: x.append(1) # Count the similarities
+            else: x.append(0)
+            if w in a2: z.append(1)
+            else: z.append(0)
+        c = 0
+
+        for i in range(len(rvector)):
+            c+= x[i]*z[i]
+        cosine_sim = c / float((sum(x)*sum(z))) # Calculate cosine similarity
+
+        return cosine_sim
 
     # Creates a vector for a particular file with the tf_idf values for first 15 unique words in the corpus
     def get_tfidf_vec(self, file_index):

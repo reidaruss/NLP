@@ -11,7 +11,6 @@ CR2 = CorpusReader.CorpusReader_TFIDF(sotu)
 df1 = CR1.tf_idf()  # Get tf_idf vector for each corpus for use below
 df2 = CR2.tf_idf()
 
-
 print("Corpus : brown")
 dim = CR1.tf_idf_dim()
 print(dim[:15])
