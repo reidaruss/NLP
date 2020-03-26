@@ -6,10 +6,10 @@ from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
 import nltk
-
 from gensim.corpora import Dictionary
 from gensim.models import TfidfModel
 from gensim.models import LdaModel
+from gensim.test.utils import datapath
 import numpy as np
 import sys
 import os
@@ -166,7 +166,17 @@ def create_model(numTopics, docs, vmType, alpha):
     lda = LdaModel(corpus=corpus, id2word=dct, num_topics=numTopics, alpha=alpha)
     return lda
 
-# TODO: Save model using save() to output file name in params
+# Save the LDA model to .model file
+def save_model(lda, filename):
+    file = datapath(filename+".model")
+    lda.save(file)
+
+# # Save the topic-word matrix to file
+# def save_topic_word():
+#
+# # Save the document-topic matrix to file
+# def save_topic_doc():
+
 
 def main():
     default_params = [8,'B','auto','n','A','L','nltk']
@@ -183,7 +193,7 @@ def main():
     docs, filenames = load_docs(directory, stopwords, params[5], params[4],params[3] )
     lda = create_model(params[0],docs, params[1], params[2])
 
-    print(lda)
+    save_model(lda, output)
 
 
 
