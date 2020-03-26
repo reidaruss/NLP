@@ -164,18 +164,42 @@ def create_model(numTopics, docs, vmType, alpha):
     # Build LDA Model ##########
     corpus = model[corpus]
     lda = LdaModel(corpus=corpus, id2word=dct, num_topics=numTopics, alpha=alpha)
-    return lda
+
+    return lda, corpus, dct
 
 # Save the LDA model to .model file
 def save_model(lda, filename):
-    file = datapath(filename+".model")
-    lda.save(file)
+    lda.save(filename+'.model')
 
-# # Save the topic-word matrix to file
-# def save_topic_word():
-#
-# # Save the document-topic matrix to file
-# def save_topic_doc():
+
+# Save the topic-word matrix to file
+def save_topic_word(corpus, lda, output, numTopics, dct):
+    for i in range(numTopics):
+        tlist = sorted(lda.get_topic_terms(i), key=lambda x: x[1], reverse=True)
+        # print(i)
+        outfile = output + '_' + str(i) + '.topic'
+        f = open(outfile, "w")
+        for x,y in tlist:
+            # print(str(dct[x])+":"+str(y)+'\n')
+            f.write(str(dct[x])+" "+str(y)+'\n')
+
+        f.close()
+
+# Save the document-topic matrix to file
+def save_topic_doc(corpus, lda, output, numTopics, dct, filenames):
+    outfile = output + '.dt'
+    f = open(outfile, "w")
+    for c in range(len(corpus)):
+        tlist = sorted(lda[corpus[c]], key=lambda x: x[1], reverse=True)
+        #print(tlist)
+        f.write(filenames[c]+':')
+        for x,y in tlist:
+            #print(str(dct[x])+":"+str(y))
+            f.write(" "+str(dct[x])+":"+str(y))
+        f.write('\n')
+    f.close()
+
+
 
 
 def main():
@@ -191,9 +215,23 @@ def main():
     stopwords = get_stopwords(params[-1])
 
     docs, filenames = load_docs(directory, stopwords, params[5], params[4],params[3] )
-    lda = create_model(params[0],docs, params[1], params[2])
+    lda, corpus, dct = create_model(params[0],docs, params[1], params[2])
 
     save_model(lda, output)
+    save_topic_word(corpus,lda, output, params[0], dct)
+    save_topic_doc(corpus, lda, output, params[0],dct , filenames)
+
+    # print("Document topic matrix:")
+    # docTopicProbMat = lda[corpus]
+    # print(docTopicProbMat)
+    # print("TopicWordProbMat")
+    # k = lda.num_topics
+    # topicWordProbMat = lda.print_topics(k)
+    # #print(topicWordProbMat)
+    # for topic in topicWordProbMat:
+    #     print(len(topic))
+    # print(len(topicWordProbMat))
+
 
 
 
